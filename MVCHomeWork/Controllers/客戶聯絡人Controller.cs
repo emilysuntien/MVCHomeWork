@@ -17,7 +17,7 @@ namespace MVCHomeWork.Controllers
         // GET: 客戶聯絡人
         public ActionResult Index(客戶聯絡人 customerContact)
         {
-            IQueryable<客戶聯絡人> data = db.客戶聯絡人.Include(客 => 客.客戶資料);
+            IQueryable<客戶聯絡人> data = db.客戶聯絡人.Include(客 => 客.客戶資料).Where(p=>p.是否刪除==false);
 
             if (customerContact.職稱 != null) { data = db.客戶聯絡人.Where(p => p.職稱.Contains(customerContact.職稱)); }
             if (customerContact.姓名 != null) { data = db.客戶聯絡人.Where(p => p.姓名.Contains(customerContact.姓名)); }
@@ -59,13 +59,13 @@ namespace MVCHomeWork.Controllers
         {
             if (ModelState.IsValid)
             {
-                //if (db.客戶聯絡人.Where(p => p.Email.Equals(客戶聯絡人.Email)).Count() == 0)
-                //{
+                if (db.客戶聯絡人.Where(p => p.Email.Equals(客戶聯絡人.Email)).Count() == 0)
+                {
                     客戶聯絡人.是否刪除 = false;
                     db.客戶聯絡人.Add(客戶聯絡人);
                     db.SaveChanges();
                     return RedirectToAction("Index");
-               // };
+                };
             }
 
             ViewBag.客戶Id = new SelectList(db.客戶資料, "Id", "客戶名稱", 客戶聯絡人.客戶Id);
@@ -125,8 +125,7 @@ namespace MVCHomeWork.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            客戶聯絡人 客戶聯絡人 = db.客戶聯絡人.Find(id);
-            db.客戶聯絡人.Remove(客戶聯絡人);
+          db.客戶聯絡人.Find(id).是否刪除=true;
             db.SaveChanges();
             return RedirectToAction("Index");
         }

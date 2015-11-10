@@ -109,8 +109,7 @@ namespace MVCHomeWork.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            客戶相關資訊 客戶相關資訊 = db.客戶相關資訊.Find(id);
-            db.客戶相關資訊.Remove(客戶相關資訊);
+            db.客戶相關資訊.Find(id);
             db.SaveChanges();
             return RedirectToAction("Index");
         }

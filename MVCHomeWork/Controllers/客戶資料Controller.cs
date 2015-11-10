@@ -18,7 +18,7 @@ namespace MVCHomeWork.Controllers
         public ActionResult Index(客戶資料 customerInfo)
         {
 
-            IQueryable<客戶資料> data = db.客戶資料;
+            IQueryable<客戶資料> data = db.客戶資料.Where(p=>p.是否刪除 ==false);
 
             if (customerInfo.客戶名稱 != null) { data =db.客戶資料.Where(p => p.客戶名稱.Contains(customerInfo.客戶名稱)); }
             if (customerInfo.統一編號 != null) {data =db.客戶資料.Where(p => p.統一編號.Contains(customerInfo.統一編號)); }
@@ -119,8 +119,7 @@ namespace MVCHomeWork.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            客戶資料 客戶資料 = db.客戶資料.Find(id);
-            db.客戶資料.Remove(客戶資料);
+            db.客戶資料.Find(id).是否刪除=true;
             db.SaveChanges();
             return RedirectToAction("Index");
         }

@@ -18,7 +18,7 @@ namespace MVCHomeWork.Controllers
         public ActionResult Index(客戶銀行資訊 customerBankInfo)
         {
 
-            IQueryable<客戶銀行資訊> data = db.客戶銀行資訊.Include(客 => 客.客戶資料);
+            IQueryable<客戶銀行資訊> data = db.客戶銀行資訊.Include(客 => 客.客戶資料).Where(p=>p.是否刪除==false);
 
             if (customerBankInfo.銀行名稱 != null) { data = db.客戶銀行資訊.Where(p => p.銀行名稱.Contains(customerBankInfo.銀行名稱)); }
             if (customerBankInfo.銀行代碼 != 0) { data = db.客戶銀行資訊.Where(p => p.銀行代碼.Equals(customerBankInfo.銀行代碼)); }
@@ -124,8 +124,7 @@ namespace MVCHomeWork.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            客戶銀行資訊 客戶銀行資訊 = db.客戶銀行資訊.Find(id);
-            db.客戶銀行資訊.Remove(客戶銀行資訊);
+            db.客戶銀行資訊.Find(id).是否刪除=true;
             db.SaveChanges();
             return RedirectToAction("Index");
         }

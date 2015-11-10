@@ -26,7 +26,7 @@ namespace MVCHomeWork.Models
         
         [StringLength(250, ErrorMessage="欄位長度不得大於 250 個字元")]
         [Required]
-        [Email不可重複Attribute]
+        //[Email不可重複Attribute]
         public string Email { get; set; }
         
         [StringLength(50, ErrorMessage="欄位長度不得大於 50 個字元")]
