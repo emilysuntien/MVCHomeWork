@@ -7,24 +7,56 @@ using System.Net;
 using System.Web;
 using System.Web.Mvc;
 using MVCHomeWork.Models;
+using Omu.ValueInjecter;
 
 namespace MVCHomeWork.Controllers
 {
     public class 客戶聯絡人Controller : Controller
     {
-        private CustomerInfoEntities db = new CustomerInfoEntities();
+        private 客戶聯絡人Repository repo;
+        public 客戶聯絡人Controller()
+        {
+            repo = RepositoryHelper.Get客戶聯絡人Repository();
+        }
 
-        // GET: 客戶聯絡人
+        [ChildActionOnly]
+        public ActionResult GetInfo(int 客戶Id)
+        {
+            ViewBag.職稱 = repo.GetTitle();
+            return View(repo.All(客戶Id).ToList());
+
+        }
+
+        [HttpPost]
+        public ActionResult GetInfo(int? id, FormCollection form)
+        {
+
+            IList< 客戶聯絡人> data = new List<客戶聯絡人>();
+
+            TryUpdateModel<IList<客戶聯絡人>>(data, "data","職稱,電話,手機".Split(','));
+            foreach(var x in data)
+            {
+                var dbItem = repo.GetById(x.Id);
+
+                dbItem.InjectFrom(x);
+
+            }
+
+            repo.UnitOfWork.Commit();
+            return View(data);
+        }
+
+        public ActionResult Index()
+        {
+            ViewBag.職稱 = repo.GetTitle();
+            return View(repo.All().ToList());
+        }
+
+        [HttpPost]
         public ActionResult Index(客戶聯絡人 customerContact)
         {
-            IQueryable<客戶聯絡人> data = db.客戶聯絡人.Include(客 => 客.客戶資料).Where(p=>p.是否刪除==false);
-
-            if (customerContact.職稱 != null) { data = db.客戶聯絡人.Where(p => p.職稱.Contains(customerContact.職稱)); }
-            if (customerContact.姓名 != null) { data = db.客戶聯絡人.Where(p => p.姓名.Contains(customerContact.姓名)); }
-            if (customerContact.手機 != null) { data = db.客戶聯絡人.Where(p => p.手機.Contains(customerContact.手機)); }
-            if (customerContact.電話 != null) { data = db.客戶聯絡人.Where(p => p.電話.Contains(customerContact.電話)); }
-
-            return View(data.ToList());
+            ViewBag.職稱 = repo.GetTitle();
+            return View(repo.All(customerContact).ToList());
            
         }
 
@@ -35,7 +67,7 @@ namespace MVCHomeWork.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            客戶聯絡人 客戶聯絡人 = db.客戶聯絡人.Find(id);
+            客戶聯絡人 客戶聯絡人 = repo.GetById(id);
             if (客戶聯絡人 == null)
             {
                 return HttpNotFound();
@@ -46,7 +78,7 @@ namespace MVCHomeWork.Controllers
         // GET: 客戶聯絡人/Create
         public ActionResult Create()
         {
-            ViewBag.客戶Id = new SelectList(db.客戶資料, "Id", "客戶名稱");
+            ViewBag.客戶Id = repo.GetSelectList客戶資料();
             return View();
         }
 
@@ -59,16 +91,12 @@ namespace MVCHomeWork.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (db.客戶聯絡人.Where(p => p.Email.Equals(客戶聯絡人.Email)).Count() == 0)
-                {
-                    客戶聯絡人.是否刪除 = false;
-                    db.客戶聯絡人.Add(客戶聯絡人);
-                    db.SaveChanges();
-                    return RedirectToAction("Index");
-                };
+                repo.Add(客戶聯絡人);
+                return RedirectToAction("Index");
+               
             }
 
-            ViewBag.客戶Id = new SelectList(db.客戶資料, "Id", "客戶名稱", 客戶聯絡人.客戶Id);
+            ViewBag.客戶Id = repo.GetSelectList客戶資料( 客戶聯絡人.客戶Id);
             return View(客戶聯絡人);
         }
 
@@ -79,12 +107,12 @@ namespace MVCHomeWork.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            客戶聯絡人 客戶聯絡人 = db.客戶聯絡人.Find(id);
+            客戶聯絡人 客戶聯絡人 = repo.GetById(id);
             if (客戶聯絡人 == null)
             {
                 return HttpNotFound();
             }
-            ViewBag.客戶Id = new SelectList(db.客戶資料, "Id", "客戶名稱", 客戶聯絡人.客戶Id);
+            ViewBag.客戶Id = repo.GetSelectList客戶資料( 客戶聯絡人.客戶Id);
             return View(客戶聯絡人);
         }
 
@@ -93,16 +121,17 @@ namespace MVCHomeWork.Controllers
         // 詳細資訊，請參閱 http://go.microsoft.com/fwlink/?LinkId=317598。
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "Id,客戶Id,職稱,姓名,Email,手機,電話")] 客戶聯絡人 客戶聯絡人)
+        public ActionResult Edit(int?id, FormCollection from)
         {
-            if (ModelState.IsValid)
+            客戶聯絡人 data = repo.GetById(id);
+            if (TryUpdateModel<客戶聯絡人>(data, "客戶Id,職稱,姓名,Email,手機,電話".Split(',')))
             {
-                db.Entry(客戶聯絡人).State = EntityState.Modified;
-                db.SaveChanges();
+                repo.UnitOfWork.Commit();
                 return RedirectToAction("Index");
             }
-            ViewBag.客戶Id = new SelectList(db.客戶資料, "Id", "客戶名稱", 客戶聯絡人.客戶Id);
-            return View(客戶聯絡人);
+            
+            ViewBag.客戶Id = repo.GetSelectList客戶資料(data.客戶Id);
+            return View(data);
         }
 
         // GET: 客戶聯絡人/Delete/5
@@ -112,7 +141,7 @@ namespace MVCHomeWork.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            客戶聯絡人 客戶聯絡人 = db.客戶聯絡人.Find(id);
+            客戶聯絡人 客戶聯絡人 = repo.GetById(id);
             if (客戶聯絡人 == null)
             {
                 return HttpNotFound();
@@ -125,8 +154,7 @@ namespace MVCHomeWork.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-          db.客戶聯絡人.Find(id).是否刪除=true;
-            db.SaveChanges();
+            repo.Delete(id);
             return RedirectToAction("Index");
         }
 
@@ -134,7 +162,7 @@ namespace MVCHomeWork.Controllers
         {
             if (disposing)
             {
-                db.Dispose();
+                repo.UnitOfWork.Context.Dispose();
             }
             base.Dispose(disposing);
         }

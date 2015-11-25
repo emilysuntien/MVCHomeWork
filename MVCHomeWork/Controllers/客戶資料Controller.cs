@@ -7,26 +7,84 @@ using System.Net;
 using System.Web;
 using System.Web.Mvc;
 using MVCHomeWork.Models;
+using NPOI.XSSF.UserModel;
+using System.IO;
+using NPOI.HSSF.UserModel;
 
 namespace MVCHomeWork.Controllers
 {
+    enum  欄位
+    {
+        姓名,
+        統一編號,
+        電話,
+        傳真,
+        地址
+    }
+
+
+
     public class 客戶資料Controller : Controller
     {
-        private CustomerInfoEntities db = new CustomerInfoEntities();
+        private 客戶資料Repository repo;
+        public 客戶資料Controller()
+        {
+            repo = RepositoryHelper.Get客戶資料Repository();
+        }
 
-        // GET: 客戶資料
-        public ActionResult Index(客戶資料 customerInfo)
+
+        public ActionResult Index()
+        {
+            ViewBag.category = repo.Get客戶分類List();
+            return View();
+        }
+
+        [HttpPost]
+        public FilePathResult Index(客戶資料 customer)
+        {
+            string fileName = Server.MapPath(@"~/Content/測試.xlsx");
+           string contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+            var excel = new XSSFWorkbook();
+            var sheet = excel.CreateSheet("測試");
+
+          
+
+            var sheetHead = sheet.CreateRow(0);
+            sheetHead.CreateCell((int)欄位.姓名).SetCellValue("姓名111");
+            sheetHead.CreateCell((int)欄位.統一編號).SetCellValue("統一編號");
+            sheetHead.CreateCell((int)欄位.電話).SetCellValue("電話");
+            sheetHead.CreateCell((int)欄位.傳真).SetCellValue("傳真");
+            sheetHead.CreateCell((int)欄位.地址).SetCellValue("地址");
+          
+
+            var data = repo.All(customer).ToList();
+
+            for (int i = 0; i <= data.Count - 1; i++)
+            {
+                var body = sheet.CreateRow(i + 1);
+                body.CreateCell((int)欄位.姓名).SetCellValue(data[i].客戶名稱);
+                body.CreateCell((int)欄位.統一編號).SetCellValue(data[i].統一編號);
+                body.CreateCell((int)欄位.電話).SetCellValue(data[i].電話);
+                body.CreateCell((int)欄位.傳真).SetCellValue(data[i].傳真);
+                body.CreateCell((int)欄位.地址).SetCellValue(data[i].地址);
+            
+            }
+
+            FileStream file = new FileStream(fileName, FileMode.Create);//產生檔案
+            excel.Write(file);
+            file.Close();
+            return File(fileName, contentType, "D.xlsx");
+
+        }
+
+        
+
+
+        public ActionResult IndexOrderBy(string orderTitle, bool flag)
         {
 
-            IQueryable<客戶資料> data = db.客戶資料.Where(p=>p.是否刪除 ==false);
-
-            if (customerInfo.客戶名稱 != null) { data =db.客戶資料.Where(p => p.客戶名稱.Contains(customerInfo.客戶名稱)); }
-            if (customerInfo.統一編號 != null) {data =db.客戶資料.Where(p => p.統一編號.Contains(customerInfo.統一編號)); }
-            if (customerInfo.電話 != null) { data = db.客戶資料.Where(p => p.電話.Contains(customerInfo.電話)); }
-            if (customerInfo.傳真 != null) { data = db.客戶資料.Where(p => p.傳真.Contains(customerInfo.傳真)); }
-            if (customerInfo.地址 != null) { data = db.客戶資料.Where(p => p.地址.Contains(customerInfo.地址)); }
-
-            return View(data.ToList());
+            return Json(repo.OrderBy(orderTitle, flag), JsonRequestBehavior.AllowGet);
         }
 
         // GET: 客戶資料/Details/5
@@ -36,7 +94,7 @@ namespace MVCHomeWork.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            客戶資料 客戶資料 = db.客戶資料.Find(id);
+            客戶資料 客戶資料 = repo.GetById(id);
             if (客戶資料 == null)
             {
                 return HttpNotFound();
@@ -59,9 +117,7 @@ namespace MVCHomeWork.Controllers
         {
             if (ModelState.IsValid)
             {
-                客戶資料.是否刪除 = false;
-                db.客戶資料.Add(客戶資料);
-                db.SaveChanges();
+                repo.Add(客戶資料);
                 return RedirectToAction("Index");
             }
 
@@ -75,7 +131,7 @@ namespace MVCHomeWork.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            客戶資料 客戶資料 = db.客戶資料.Find(id);
+            客戶資料 客戶資料 = repo.GetById(id);
             if (客戶資料 == null)
             {
                 return HttpNotFound();
@@ -88,15 +144,18 @@ namespace MVCHomeWork.Controllers
         // 詳細資訊，請參閱 http://go.microsoft.com/fwlink/?LinkId=317598。
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit([Bind(Include = "Id,客戶名稱,統一編號,電話,傳真,地址,Email")] 客戶資料 客戶資料)
+        public ActionResult Edit(int? id,FormCollection form)
+            //[Bind(Include = "Id,客戶名稱,統一編號,電話,傳真,地址,Email")] 客戶資料 客戶資料)
         {
-            if (ModelState.IsValid)
+
+            客戶資料 data = repo.GetById(id);
+            if (TryUpdateModel<客戶資料>(data, "客戶名稱,統一編號,電話,傳真,地址,Email".Split(',')))
             {
-                db.Entry(客戶資料).State = EntityState.Modified;
-                db.SaveChanges();
+                repo.UnitOfWork.Commit();
                 return RedirectToAction("Index");
             }
-            return View(客戶資料);
+
+            return View(data);          
         }
 
         // GET: 客戶資料/Delete/5
@@ -106,7 +165,7 @@ namespace MVCHomeWork.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            客戶資料 客戶資料 = db.客戶資料.Find(id);
+            客戶資料 客戶資料 = repo.GetById(id);
             if (客戶資料 == null)
             {
                 return HttpNotFound();
@@ -119,8 +178,7 @@ namespace MVCHomeWork.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            db.客戶資料.Find(id).是否刪除=true;
-            db.SaveChanges();
+            repo.Delete(id);
             return RedirectToAction("Index");
         }
 
@@ -128,7 +186,7 @@ namespace MVCHomeWork.Controllers
         {
             if (disposing)
             {
-                db.Dispose();
+                repo.UnitOfWork.Context.Dispose();
             }
             base.Dispose(disposing);
         }

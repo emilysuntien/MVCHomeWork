@@ -7,69 +7,105 @@
 <h2>客戶資料</h2>
 
 <div style="text-align:right;">
+    @Html.DropDownList("category", null, "請選擇", new { ng_model = "search.category" })
     @using (Html.BeginForm())
     {
-    <input type="text" name="客戶名稱" placeholder="客戶名稱" />
-    <input type="text" name="統一編號" placeholder="統編" />
-    <input type="text" name="電話" placeholder="電話" />
-    <input type="text" name="傳真" placeholder="傳真" />
-    <input type="text" name="地址" placeholder="地址" />
-    <input type="submit" value="搜尋" class="btn btn-default" />
+    <input type="text" name="客戶名稱" placeholder="客戶名稱" ng-model="search.name" />
+    <input type="text" name="統一編號" placeholder="統編"  ng-model="search.ID"  />
+    <input type="text" name="電話" placeholder="電話" ng-model="search.tel"/>
+    <input type="text" name="傳真" placeholder="傳真" ng-model="search.fax"/>
+    <input type="text" name="地址" placeholder="地址" ng-animate="search.addr"/>
+    <input type="submit" value="匯出" class="btn btn-default" />
     }
+  
 </div>
+
 <p>
     @Html.ActionLink("Create New", "Create")
 </p>
-<table class="table">
+<table class="table" ng-controller="MyController">
     <tr>
-        <th>
-            @Html.DisplayNameFor(model => model.客戶名稱)
+        <th name="orderBy" id="客戶名稱">
+            客戶名稱
         </th>
-        <th>
-            @Html.DisplayNameFor(model => model.統一編號)
+        <th name="orderBy" id="統一編號">
+            統一編號
         </th>
-        <th>
-            @Html.DisplayNameFor(model => model.電話)
+        <th name="orderBy" id="電話">
+            電話
         </th>
-        <th>
-            @Html.DisplayNameFor(model => model.傳真)
+        <th name="orderBy" id="傳真">
+            傳真
         </th>
-        <th>
-            @Html.DisplayNameFor(model => model.地址)
+        <th name="orderBy" id="地址">
+            地址
         </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Email)
+        <th name="orderBy" id="Email">
+            Email
         </th>
-        <th></th>
+
     </tr>
-
-    @foreach (var item in Model)
-    {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.客戶名稱)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.統一編號)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.電話)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.傳真)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.地址)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            <td>
-                @Html.ActionLink("Edit", "Edit", new { id = item.Id }) |
-                @Html.ActionLink("Details", "Details", new { id = item.Id }) |
-                @Html.ActionLink("Delete", "Delete", new { id = item.Id })
-            </td>
+    @*<tr ng-repeat="item in datas">
+        <td>{{item['客戶名稱']}}</td>
+        <td>{{item.Email}}</td>
+    </tr>*@
+        <tr  ng-repeat="item in list|filter:search.category:true|filter:search">
+            <td>{{item.name}}</td>
+            <td>{{item.ID}}</td>
+            <td>{{item.tel}}</td>
+            <td>{{item.fax}}</td>
+            <td>{{item.addr}}</td>
+            <td>{{item.email}}</td>
+            <td><a href="/客戶資料/Edit/{{item.id}}">Edit</a></td>
+            <td><a href="/客戶資料/Details/{{item.id}}">Details</a></td>
+            <td><a href="/客戶資料/Delete/{{item.id}}">Delete</a></td>
         </tr>
-    }
-
+    
 </table>
+
+
+<script>
+    function MyController($scope) {
+      
+        var flag = true;
+        loadData("");
+
+        function loadData(title) {
+           var list = [];
+            $.post('/客戶資料/IndexOrderBy', { orderTitle: title, flag: flag }, function (data) {
+                $scope.datas = data;
+                $.each(data, function (i) {
+                    var t = {
+                        id:data[i].Id,
+                        name: data[i].客戶名稱,
+                        tel: data[i].電話,
+                        fax: data[i].傳真,
+                        addr: data[i].地址,
+                        ID: data[i].統一編號,
+                        email: data[i].Email,
+                        category:data[i].客戶分類
+                    }
+                    list.push(t);
+                    
+                })
+                $scope.list = list;
+                console.log(data);
+                $scope.$apply();
+                 flag = !flag;
+               // alert(data[0].Email);
+               
+            });
+        }
+
+        $("th[name='orderBy']").click(function () {
+            loadData(this.id);
+
+        });       
+        }        
+          
+</script>
+
+
+
+
+

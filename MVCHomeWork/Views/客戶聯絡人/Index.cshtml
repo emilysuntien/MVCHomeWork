@@ -9,7 +9,8 @@
 <div style="text-align:right;">
     @using (Html.BeginForm())
     {
-        <input type="text" name="職稱" placeholder="職稱" />
+        <span>職稱</span>
+        @Html.DropDownList("職稱","");
         <input type="text" name="姓名" placeholder="姓名" />
         <input type="text" name="手機" placeholder="手機" />
         <input type="text" name="電話" placeholder="電話" />
